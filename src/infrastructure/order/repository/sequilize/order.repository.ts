@@ -14,7 +14,7 @@ export default class OrderRepository implements OrderRepositoryInterface {
         items: entity.items.map(item => ({
           id: item.id,
           name: item.name,
-          order_id:entity.id,
+          order_id: entity.id,
           price: item.price,
           product_id: item.productId,
           quantity: item.quantity
@@ -27,35 +27,72 @@ export default class OrderRepository implements OrderRepositoryInterface {
   }
 
   async update(entity: Order): Promise<void> {
-    throw new Error("Method not implemented.");
+    await OrderModel.update({
+      id: entity.id,
+      customer_id: entity.customerId,
+      total: entity.total()
+    }, {
+      where: {
+        id: entity.id
+      }
+    })
+
+    await OrderItemModel.destroy({
+      where: {
+        order_id: entity.id
+      }
+    })
+
+    await OrderItemModel.bulkCreate(entity.items.map(item => ({
+      id: item.id,
+      name: item.name,
+      order_id: entity.id,
+      price: item.price,
+      product_id: item.productId,
+      quantity: item.quantity
+    })))
   }
 
   async find(id: string): Promise<Order> {
-    let orderModel;
-    try {
-      orderModel = await OrderModel.findOne({
-        where: { id },
-        include: ["items"],
-        rejectOnEmpty: true,
-      });
-    } catch (error) {
+    const orderModel = await OrderModel.findOne({
+      where: { id },
+      include: [{ model: OrderItemModel }]
+    });
+
+    if (!orderModel) {
       throw new Error("Order not found");
     }
 
-    const items = orderModel.items.map((item): OrderItem => {
-      return new OrderItem(
-        item.id,
-        item.name,
-        item.price,
-        item.product_id,
-        item.quantity
-      );
-    });
+    const orderItems: OrderItem[] = orderModel.items.map(
+      (item) => new OrderItem(item.id, item.name, item.price, item.product_id, item.quantity)
+    );
 
-    return new Order(id, orderModel.customer_id, items);
+    return new Order(
+      orderModel.id,
+      orderModel.customer_id,
+      orderItems
+    );
   }
 
+
   async findAll(): Promise<Order[]> {
-    throw new Error("Method not implemented.");
+    const ordersModel = await OrderModel.findAll({
+      include: [{ model: OrderItemModel }]
+    });
+
+    if (ordersModel.length === 0) {
+      return [];
+    }
+
+    return ordersModel.map(
+      (order) => new Order(
+        order.id,
+        order.customer_id,
+        order.items.map(
+          (item) => new OrderItem(item.id, item.name, item.price, item.product_id, item.quantity)
+        )
+      )
+    )
+
   }
 }
