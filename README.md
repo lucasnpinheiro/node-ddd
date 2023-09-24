@@ -10,7 +10,7 @@ docker compose run app-ddd npm install
 
 ```
 
-### Execute test project
+### Run test project
 
 ```shell
 
@@ -18,7 +18,7 @@ docker compose run app-ddd npm run test
 
 ```
 
-## Usando make
+## Using make
 
 ### Start project
 
@@ -28,10 +28,18 @@ make install
 
 ```
 
-### Execute test project
+### Run test project
 
 ```shell
 
 make test
+
+```
+
+### Run specific test project
+
+```shell
+
+make test-filter CMD=src/infrastructure/order/repository/sequilize/order.repository.spec.ts
 
 ```
